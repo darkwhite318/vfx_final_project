@@ -45,9 +45,10 @@ guidata(hObject, handles);
 function varargout = click_OutputFcn(hObject, eventdata, handles) 
 %varargout{1} = handles.output;
 varargout{1} = handles.output_1;%imsrc
-varargout{2} = handles.output_2;%mask
+varargout{2} = handles.output_2;%maskfill
 varargout{3} = handles.output_3;%save
 varargout{4} = handles.output_4;%saveb
+varargout{5} = handles.output_5;%maskfill-mask
 delete(handles.figure1);
 
 
@@ -60,6 +61,7 @@ handles.imsrc = imread([pathName,fileName]);
 handles.output_1 = handles.imsrc;
 handles.mask = zeros(size(handles.imsrc,1),size(handles.imsrc,2));
 %image show
+hold off;
 axes(handles.screen);
 imshow(uint8(handles.imsrc));
 set(handles.fileName,'String',fileName);
@@ -109,16 +111,17 @@ if((handles.out==0) &&(handles.flag ==1) && (handles.fill == 0))
     else % filling
 %         point = get(handles.screen, 'CurrentPoint');
 %         handles.mask(point(1,2),point(1,1)) = 1;
-        handles.mask = imfill(handles.mask,'holes');
-        handles.output_2 = handles.mask;
+        handles.maskfill = imfill(handles.mask,'holes');
+        handles.output_2 = handles.maskfill;
+        handles.output_5 = handles.maskfill - handles.mask;
 %         axes(handles.screen);
 %         imshow(handles.mask);
 
         %coloring the patch
-        patch_img = uint8(~(handles.mask));
+        patch_img = uint8(~(handles.maskfill));
         handles.src1 = handles.imsrc;
         handles.src1(:,:,1) = handles.imsrc(:,:,1).*patch_img;
-        handles.src1(:,:,1) = handles.imsrc(:,:,1) + uint8(handles.mask)*200;
+        handles.src1(:,:,1) = handles.imsrc(:,:,1) + uint8(handles.maskfill)*200;
         axes(handles.screen);
         imshow(uint8(handles.src1));
         handles.fill = 1;
@@ -204,13 +207,3 @@ if(handles.check_plot ==1 && handles.check_cut == 0)
     guidata(hObject,handles);
 end
 
-% 
-% % --- Executes on button press in loadimg2.
-% function loadimg2_Callback(hObject, eventdata, handles)
-% [fileName pathName] = uigetfile({'*.jpg';'*.png'},'choose image file');
-% handles.imsrc2 = imread([pathName,fileName]);
-% axes(handles.screen2);
-% imshow(uint8(handles.imsrc2));
-% %set(handles.fileName,'String',fileName);
-% %handles.flag = 1;
-% guidata(hObject,handles);
