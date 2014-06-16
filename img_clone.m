@@ -120,19 +120,19 @@ guidata(hObject,handles);
 
 % --- Executes on button press in clone.
 function clone_Callback(hObject, eventdata, handles)
-%show patch pixel num
-num = sum(sum(handles.sMask));
-disp('num of total pixel points=');
-disp(num);
-%calc f-g for all boundary pixels
-numb = size(handles.saveb,1);
-disp('num of total boundary points=');
-disp(numb);
-numin = sum(sum(handles.sMaskin));
-disp('num of total inner pixel points=');
-disp(numin);
+%%  show patch pixel num
 
-%get differnce form source to target
+num = sum(sum(handles.sMask));
+% disp('num of total pixel points=');
+% disp(num);
+% %calc f-g for all boundary pixels
+ numb = size(handles.saveb,1);
+% disp('num of total boundary points=');
+% disp(numb);
+ numin = sum(sum(handles.sMaskin));
+% disp('num of total inner pixel points=');
+% disp(numin);
+%% get differnce form source to target
 % T = dif + S
 dify = round(handles.clonePoint(1,2))-handles.pCenter(1);
 difx = round(handles.clonePoint(1,1))-handles.pCenter(2);
@@ -141,7 +141,7 @@ d = handles.recB(2);
 l = handles.recB(3);
 r = handles.recB(4);
 
-%calculate img difference and put them in the order of boundary list
+%% calculate img difference and put them in the order of boundary list
 [R C S] = size(handles.tImg);
 diff_img = double(handles.tImg);
 diff_img(u+dify:d+dify,l+difx:r+difx,:) = double(handles.tImg(u+dify:d+dify,l+difx:r+difx,:)) - double(handles.sImg(u:d,l:r,:));
@@ -154,23 +154,16 @@ handles.pMaskin = zeros(R,C);
 handles.pMaskin(u+dify:d+dify,l+difx:r+difx) = handles.sMaskin(u:d,l:r);
 
 new_img = handles.tImg;
-%new boundary points setting
+%% calculate source and target mask list
 tempx = difx*ones(numb,1);
 tempy = dify*ones(numb,1);
 temp = [tempx tempy];
 bb = temp + handles.saveb;
 
-% for in1 = 1:R
-%     for in2 = 1:C
-%         if(handles.pMaskin)
-%             new_img(in1,in2,:) = handles.sImg(in1-dify,in2-difx,:) + MVC(in2,in1,bb,diff_list);
-%         end
-%     end
-% end
 pMaskin_list = zeros(numin,2);
 count = 1;
-for in1 = 1:R
-    for in2 = 1:C
+for in1 = u+dify:d+dify
+    for in2 = l+difx:r+difx
         if(handles.pMaskin(in1,in2))
            pMaskin_list(count,:) = [in2 in1];%[x y]
            count = count+1;
@@ -182,35 +175,58 @@ temp_mask_y = dify*ones(numin,1);
 temp_mask = [temp_mask_x temp_mask_y];
 sMaskin_list = pMaskin_list - temp_mask;
 
-%hierachical 
-% hier_num = numin;
-% level = 1;
-% hier_list = zeros(numin,2,16);
-% hier_list(:,:,1) = pMaskin_list;
-% hier_num_list = zeros(16,1);
-% hier_num_list(1,1) = numin;
-% 
-% while(hier_num > 16)
-%     hier_num_bound = hier_num-mod(hier_num,2);
-%     for in = 2:2:hier_num_bound
-%         hier_list(in/2,:,level+1) = hier_list(in,:,level);
-%     end
-% hier_num = hier_num_bound/2;
-% hier_num_list(level+1,1) = hier_num;
-% level = level+1;
-% disp('hier_num');
-% disp(hier_num);
+%% hierachical boundary sampling
+%construct hierachy
+hier_num = numb;
+level = 1;
+hier_list = zeros(numb,2,14);
+hier_list(:,:,1) = bb;%use target boundary point list
+hier_num_list = zeros(14,1);
+hier_num_list(1,1) = numb;
+finalList = ones(numb,1);
+while(hier_num > 16)
+    hier_num_bound = hier_num-mod(hier_num,2);
+    for in = 2:2:hier_num_bound
+        hier_list(in/2,:,level+1) = hier_list(in,:,level);
+    end
+hier_num = hier_num_bound/2;
+hier_num_list(level+1,1) = hier_num;
+level = level+1;
+end
+axes(handles.screen2);
+hold on;
+step = 2^(level-1); 
+for in1 = step : step : numb - mod(numb,step)
+    finalList(in1) = 0;
+    %plot(bb(in1,1),bb(in1,2),'r+');
+end
+tic
+O = hierachy(finalList,pMaskin_list(500,1),pMaskin_list(500,2),hier_list,hier_num_list,level-1);
+toc
+% axes(handles.screen2);
+% hold on;
+% plot(pMaskin_list(500,1),pMaskin_list(500,2),'b+');
+% for i = 1:size(O,1)
+%     plot(O(i,1),O(i,2),'r+');
 % end
 
+% tic
+% for iter = 1:numin
+%     O = hierachy(finalList,pMaskin_list(iter,1),pMaskin_list(iter,2),hier_list,hier_num_list,level-1);
+% end
+% toc
+%% run MVC on each point
+ 
+% for iter = 1:numin;
+%     new_img(pMaskin_list(iter,2),pMaskin_list(iter,1),:) =  floor(double(handles.sImg(sMaskin_list(iter,2),sMaskin_list(iter,1),:)) + MVC(pMaskin_list(iter,1),pMaskin_list(iter,2),bb,diff_list));
+% end
 
-for iter = 1:numin;
-new_img(pMaskin_list(iter,2),pMaskin_list(iter,1),:) =  floor(double(handles.sImg(sMaskin_list(iter,2),sMaskin_list(iter,1),:)) + MVC(pMaskin_list(iter,1),pMaskin_list(iter,2),bb,diff_list));
-end
-
+ %testing pixel unit
  %o = double(MVC(handles.clonePoint(1,1),handles.clonePoint(1,2),bb,diff_list));
  %v = double( handles.sImg(handles.clonePoint(1,2)-dify,handles.clonePoint(1,1)-difx,:));
  %oi = floor(o+v);
- 
-  axes(handles.screen2);
-  imshow(uint8(new_img));
+ %% %show
+  %axes(handles.screen2);
+  %imshow(uint8(new_img));
+  
 guidata(hObject,handles);

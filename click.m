@@ -91,16 +91,16 @@ end
 % --- Executes on mouse press over figure background, over a disabled or
 % --- inactive control, or over an axes background.
 function figure1_WindowButtonUpFcn(hObject, eventdata, handles)
-global save;
+global savea;
 %click boundary reference point
 if((handles.out==0) &&(handles.flag ==1) && (handles.fill == 0))
     if(handles.check_cut ==0)
         if(handles.check_plot ==0)
-            save = [];
+            savea = [];
         end
         point = get(handles.screen,'CurrentPoint');
-        save = [save ;round(point(1,1)),round(point(1,2))];
-        handles.save = save;
+        savea = [savea ;round(point(1,1)),round(point(1,2))];
+        handles.save = savea;
         axes(handles.screen);
         hold on;
         %handles.ploting = plot(handles.save(:,1),handles.save(:,2),'y.');
@@ -163,7 +163,8 @@ if(handles.check_plot ==1 && handles.check_cut == 0)
         step = sign(handles.save(in+1,1)-handles.save(in,1));
             for x = handles.save(in,1):step:handles.save(in+1,1)-1
                 y = round(m*x+c);
-                saveb = [saveb;x,y];
+                saveb = cat(1,saveb,[x,y]);
+                %saveb = [saveb;x,y];
                 handles.mask(y,x) = 1;
                 plot(x,y,'y.');
             end
@@ -171,7 +172,8 @@ if(handles.check_plot ==1 && handles.check_cut == 0)
             step = sign(handles.save(in+1,2)-handles.save(in,2));
             for y = handles.save(in,2):step:handles.save(in+1,2)-1
                 x = round((y-c)/m);
-                saveb = [saveb;x,y];
+                saveb = cat(1,saveb,[x,y]);
+                %saveb = [saveb;x,y];
                 handles.mask(y,x) = 1;
                 plot(x,y,'y.');
             end
@@ -187,7 +189,8 @@ if(handles.check_plot ==1 && handles.check_cut == 0)
         step = sign(handles.save(1,1)-handles.save(num,1));
         for x = handles.save(num,1):step:handles.save(1,1)-1
             y = round(m*x+c);
-            saveb = [saveb;x,y];
+            saveb = cat(1,saveb,[x,y]);
+            %saveb = [saveb;x,y];
             handles.mask(y,x) = 1;
             plot(x,y,'y.');
         end
@@ -195,12 +198,14 @@ if(handles.check_plot ==1 && handles.check_cut == 0)
         step = sign(handles.save(1,2)-handles.save(num,2));
         for y = handles.save(num,2):step:handles.save(1,2)-1
             x = round((y-c)/m);
-            saveb = [saveb;x,y];
+            saveb = cat(1,saveb,[x,y]);
+            %saveb = [saveb;x,y];
             handles.mask(y,x) =1;
             plot(x,y,'y.');
          end
     end
     handles.saveb = saveb;
+    %dlmwrite('out.txt',saveb);
     handles.output_3 = handles.save;
     handles.output_4 = handles.saveb;
     handles.check_cut = 1;
